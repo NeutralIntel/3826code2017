@@ -1,0 +1,223 @@
+package org.usfirst.frc.team3826.robot;
+import org.opencv.core.Rect;
+import org.opencv.imgproc.Imgproc;
+
+import com.kauailabs.navx.frc.AHRS;
+
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Relay;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Victor;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.vision.VisionThread;
+//                                          2017 Bot Code
+/**
+ *
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to each mode, as described in the IterativeRobot
+ * documentation. If you change the name of this class or the package after
+ * creating this project, you must also update the manifest file in the resource
+ * directory.
+ */
+public class Robot extends IterativeRobot {
+
+	RobotDrive ourRobot;
+	Joystick xBox;//Joystick
+	Relay spike;//Relay named Spike
+	Victor shooter;
+	
+	static final int IMG_WIDTH = 640;
+	static final int IMG_HEIGHT = 480;
+	VisionThread visionThread;
+	double centerX = 0.0;
+	double centerRX = 0;
+	double centerQX = 0;
+	double rCenter = 0;
+	double qCenter = 0;
+	final Object imgLock = new Object();
+	double targetRot;
+	
+	double setPoint;
+	double autoSetPoint;
+	double angleDisplace;
+	double rotSpeed;
+	double angleNow;
+	AHRS ahrs;
+	
+	int autoCounter;
+	boolean autoSetpoint;
+
+	
+
+    /**
+     * This function is run when the robot is first started up and should be
+     * used for any initialization code.
+     */
+    
+    public void robotInit() {
+    	ourRobot = new RobotDrive(0,1);//Drive Train PWM ports are 0 and 1
+    	xBox = new Joystick(0);//Xbox controller has an ID of 0 on the driver station
+    	spike = new Relay(1);
+    	shooter = new Victor(2);
+    	UsbCamera camera = CameraServer.getInstance().startAutomaticCapture();
+        camera.setResolution(IMG_WIDTH, IMG_HEIGHT);
+        camera.setExposureManual(45);
+        
+        visionThread = new VisionThread(camera, new VisionPipelinew(), pipeline -> {
+            if (!pipeline.filterContoursOutput().isEmpty()) {
+                Rect r = Imgproc.boundingRect(pipeline.filterContoursOutput().get(0));
+                synchronized (imgLock) {
+                    centerRX = r.x + (r.width / 2);
+                }
+                Rect q = Imgproc.boundingRect(pipeline.filterContoursOutput().get(1));
+                synchronized (imgLock) {
+                    centerQX = q.x + (q.width / 2);
+                }
+            }
+        });
+        visionThread.start();
+        
+    	ahrs = new AHRS(SPI.Port.kMXP);
+    }
+    
+    /**
+     * This function is run once each time the robot enters autonomous mode
+     */
+    public void autonomousInit() {
+    }
+
+    /**
+     * This function is called periodically during autonomous
+     */
+	public void autonomousPeriodic() {
+    }
+    	
+    
+    /**
+     * This function is called once each time the robot enters teleoperated mode
+     */
+    public void teleopInit(){
+    	ahrs.reset();
+    	spike.set(Relay.Value.kForward);//Sets the spike to on in the positive direction
+    }
+
+    /**
+     * This function is called periodically during operator control
+     */
+    /* (non-Javadoc)
+     * @see edu.wpi.first.wpilibj.IterativeRobot#teleopPeriodic()
+     */
+    public void teleopPeriodic() {
+    	
+    	//ANGLE
+    	angleNow = ahrs.getAngle();
+        angleDisplace = Math.abs(angleNow - setPoint);
+        
+        //Makeshift PID Loop Stand-in
+        if(angleNow > setPoint && angleDisplace > 15){
+        	rotSpeed = 0.02 * (angleDisplace+5);
+        }
+        else if(angleNow > setPoint && angleDisplace > 1.25){
+        	rotSpeed = 0.4 + (angleDisplace/100);
+        }
+        else if(angleNow < setPoint && angleDisplace > 15){
+        	rotSpeed = -0.02 * (angleDisplace+5);
+        }
+        else if(angleNow < setPoint && angleDisplace > 1.25){
+        	rotSpeed = -0.4 - (angleDisplace/100);
+        }
+        else{
+        	rotSpeed = 0;
+        }
+        
+
+        //Reset Accelerometer/Gyro + Encoders
+    	if(xBox.getRawButton(1)){
+    		ahrs.reset();
+    	}
+        
+        //VISION
+		if(Math.abs(centerRX - centerQX) > 50){
+			if(centerRX > centerQX){
+				rCenter = centerRX;
+				qCenter = centerQX;
+			}
+			else{
+				rCenter = centerQX;
+				qCenter = centerRX;
+			}
+    	}
+        targetRot = 0.002 * (320 - centerX);
+
+    	
+    	//Sets 'setPoint' to 45 and sets arcadeDrive turn value to 'rotSpeed'
+    	if(xBox.getRawButton(2)){
+    		setPoint = 45;
+    		ourRobot.arcadeDrive(0,rotSpeed);
+    	}
+    	else if(xBox.getRawButton(3)){//Sets 'setPoint' to -45 and sets arcadeDrive turn value to 'rotSpeed'
+    		setPoint = -45;
+    		ourRobot.arcadeDrive(0,rotSpeed);
+    	}
+    	else if(xBox.getRawButton(4)){
+    		if(targetRot > .15){
+    			if(targetRot < .39){
+    				ourRobot.arcadeDrive(0,.39);
+    			}
+    			else if(targetRot > .45){
+    				ourRobot.arcadeDrive(0,.45);
+    			}
+    			else{
+    				ourRobot.arcadeDrive(0,targetRot);
+    			}
+    		}
+    		else if(targetRot < -.15){
+    			if(targetRot > -.39){
+    				ourRobot.arcadeDrive(0,-.39);
+    			}
+    			else if(targetRot < -.45){
+    				ourRobot.arcadeDrive(0,-.45);
+    			}
+    			else{
+    				ourRobot.arcadeDrive(0,targetRot);
+    			}
+    		}
+    	}
+    	else if(Math.abs(xBox.getRawAxis(1)) > .05 || Math.abs(xBox.getRawAxis(0)) > 0.1){//If stick outside deadzone
+    		ourRobot.arcadeDrive(xBox.getRawAxis(1), -xBox.getRawAxis(0));//Control the bot with the left stick
+    	}
+    	else{//If no buttons are pressed and the left stick is not being moved
+    		ourRobot.arcadeDrive(0,0);//Stop the bot
+    	}
+    	
+    	
+    	//PRINTING
+    	SmartDashboard.putNumber("Center X",centerX);
+    	SmartDashboard.putNumber("Center R",rCenter);
+    	SmartDashboard.putNumber("Center Q",qCenter);
+    	SmartDashboard.putNumber("Rotation to Target",targetRot);
+    	SmartDashboard.putNumber("Angle",angleNow);
+    	SmartDashboard.putNumber("Setpoint",setPoint);
+    	SmartDashboard.putNumber("Displacement",angleDisplace);
+    	SmartDashboard.putNumber("Angle Speed",rotSpeed);
+    	SmartDashboard.putNumber("Auto Counter",autoCounter);
+    	
+    	
+    	Timer.delay(.04);// wait 40ms to avoid hogging CPU cycles
+
+    }
+    
+    /**
+     * This function is called periodically during test mode
+     */
+    
+    public void testPeriodic() {
+    System.out.println("testing Riolog");
+    }
+       
+}
