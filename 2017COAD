@@ -69,7 +69,7 @@ public class Robot extends IterativeRobot {
         camera.setExposureManual(45);
         
         visionThread = new VisionThread(camera, new VisionPipelinew(), pipeline -> {
-            if (!pipeline.filterContoursOutput().size >= 2) {
+            if (pipeline.filterContoursOutput().size >= 2) {
                 Rect r = Imgproc.boundingRect(pipeline.filterContoursOutput().get(0));
                 Rect q = Imgproc.boundingRect(pipeline.filterContoursOutput().get(1));
                 synchronized (imgLock) {
