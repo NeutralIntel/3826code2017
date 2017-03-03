@@ -77,6 +77,7 @@ public class Robot extends IterativeRobot {
 	
 	private int mode = 1;
 	private SendableChooser chooser;
+	boolean atSpeed;
 	
 
     /**
@@ -305,6 +306,8 @@ public class Robot extends IterativeRobot {
     	leftSide.reset();
     	rightSide.reset();
     	spike.set(Relay.Value.kForward);//Sets the spike to on in the positive direction
+    	closed = false;
+    	open = false;
     }
 
     /**
@@ -352,7 +355,7 @@ public class Robot extends IterativeRobot {
         targetRot = 0.002 * (320 - centerX);
 		
     	
-    	if(xBox.getRawButton(4)){
+    	if(xBox.getRawButton(4)){//Turn to vision target
     		if(targetRot > .125){
     			if(targetRot < .41){
     				ourRobot.arcadeDrive(0,.41);
@@ -388,7 +391,7 @@ public class Robot extends IterativeRobot {
     	
     	
     	if(xBox.getRawButton(5)){
-    		sweeper.set(-1);
+    		sweeper.set(-.75);
     	}
     	else if(shooter.getEncVelocity() > -17500){
     		sweeper.set(0);
@@ -449,25 +452,34 @@ public class Robot extends IterativeRobot {
     	}*/
     	
     	if(xBox.getRawButton(1)){
-    		shooter.set(-18500);
+    		shooter.set(-18850);//Setpoint for PID
     	}
     	else{
     		shooter.set(0);
     	}
     	
-    	if(xBox.getRawButton(6)){
-    		if(shooter.getEncVelocity() < -17500){
-    			roller.set(-1);
-    			sweeper.set(-1);
+    	
+    		if(shooter.getEncVelocity() < -18750){//Speed we shoot at
+    			atSpeed = true;
     		}
     		else{
-    			roller.set(0);
+    			atSpeed = false;
     		}
-    	}
+    	
+    if(xBox.getRawButton(6)){
+    	if(atSpeed){
+			roller.set(-0.5);
+			sweeper.set(-0.5);
+			Timer.delay(.15);//How long roller spins
+			roller.set(0);
+			sweeper.set(0);
+			Timer.delay(.05);//Time between spins
+			}
     	else{
     		roller.set(0);
     	}
-    	
+    }
+    
     	//Gear Control - Moves to open while holding B
     	if(flagOne.get() && !open){//Right Sensor is detected (When Closed)
     		fOne = 1;//Sets variables for Troubleshooting purposes
