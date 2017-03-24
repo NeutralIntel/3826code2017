@@ -236,24 +236,20 @@ public class Robot extends IterativeRobot {
         	default://No moving
         		
 		System.out.println(“Default: Nothing”);
-		safeMode = true;
-		useCam = false;
 		runAuto = false;
-        		ourRobot.arcadeDrive(0,0);
-        		break;
+        	ourRobot.arcadeDrive(0,0);
+        	break;
         	
         	case 1://No moving
         		
 		System.out.println(“Case 1: Nothing”);
-		safeMode = true;
-		useCam = false;
 		runAuto = false;
-        		ourRobot.arcadeDrive(0,0);
-        		break;
+        	ourRobot.arcadeDrive(0,0);
+        	break;
         		
         	case 2://Right Gear DR
         		
-        		System.out.println(“Case 2: Right DR“);
+        	System.out.println(“Case 2: Right DR“);
             	autoSetpoint = -56;//Degrees to turn (negative = left)
 		safeMode = false;
 		useCam = false;
@@ -344,39 +340,39 @@ public class Robot extends IterativeRobot {
 
         	case 5://Right Gear Safe
         		
-        		System.out.println(“Case 5: Right Safe“);
+        	System.out.println(“Case 5: Right Safe“);
             	autoSetpoint = -56;//Degrees to turn (negative = left)
 		safeMode = true;
 		useCam = false;
 		runAuto = true;
-        		break;
+        	break;
         		
         	case 6://Left Gear Safe
 		
-        		System.out.println(“Case 6: Left Safe“);
+        	System.out.println(“Case 6: Left Safe“);
             	autoSetpoint = 56;//Degrees to turn (negative = left)
-        		safeMode = true;
+        	safeMode = true;
 		useCam = false;
 		runAuto = true;
-        		break;
+        	break;
 
         	case 7://Right Gear Camera
 		
-        		System.out.println(“Case 7: Right Camera“);
+        	System.out.println(“Case 7: Right Camera“);
             	autoSetpoint = -56;//Degrees to turn (negative = left)
-        		safeMode = false;
+        	safeMode = false;
 		useCam = true;
 		runAuto = true;
-        		break;
+        	break;
 
         	case 7://Left Gear Camera
 		
-        		System.out.println(“Case 8: Left Camera“);
+        	System.out.println(“Case 8: Left Camera“);
             	autoSetpoint = 56;//Degrees to turn (negative = left)
-        		safeMode = false;
+        	safeMode = false;
 		useCam = true;
 		runAuto = true;
-        		break;
+        	break;
 
 		if(autoCounter == 0 && runAuto){//Step 1 - Move Forward
         			if(rightSide.get() < 1500){
@@ -474,25 +470,25 @@ public class Robot extends IterativeRobot {
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
-        				if(flagOne.getValue() > 3000 && !safeMode && leftSide.getRate() < 10){//if door closed
-            				gear.set(-.7);//open door
-            				Timer.delay(0.2);
-            				gear.set(-.3);
-        				}
-				if(flagTwo.getValue() > 2500){
-					gear.set(0);
-					if(safeMode){
-        						autoCounter = 20;//next step
-        					}
-					else{
-						autoCounter = 6;
+					if(!safeMode){
+        					if(flagOne.getValue() > 3000 && leftSide.getRate() < 10){//if door closed
+            						gear.set(-.7);//open door
+            						Timer.delay(0.2);
+            						gear.set(-.3);
+        						}
+						if(flagTwo.getValue() > 2500){
+							gear.set(0);
+							autoCounter = 6;
+						}	
 					}
+					else if(safeMode && leftSide.getRate() < 10){
+						autoCounter = 20;
+					}	
 				}
-			}
         		}
         		else if(autoCounter == 6){//Step 7 - Delay
         			leftSide.reset();//reset encoders
-            		rightSide.reset();
+            			rightSide.reset();
         			autoCounter = 7;//next step
         		}
         		else if(autoCounter == 7){//Step 8 - Start Reversing
