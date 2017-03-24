@@ -152,8 +152,8 @@ public class Robot extends IterativeRobot {
     	chooser.addObject("Middle Gear", 4);
     	chooser.addObject("Right Gear Safe",5);
     	chooser.addObject("Left Gear Safe",6);
-	chooser.addObject(“Right Gear Camera”,7);
-	chooser.addObject(“Left Gear Camera”,8);
+    	chooser.addObject("Right Gear Camera",7);
+		chooser.addObject("Left Gear Camera",8);
     	SmartDashboard.putData("Auto Modes", chooser);
     	
     }//
@@ -235,41 +235,41 @@ public class Robot extends IterativeRobot {
         
         	default://No moving
         		
-		System.out.println(“Default: Nothing”);
-		runAuto = false;
-        	ourRobot.arcadeDrive(0,0);
-        	break;
+        		System.out.println("Default: Nothing");
+        		runAuto = false;
+        		ourRobot.arcadeDrive(0,0);
+        		break;
         	
         	case 1://No moving
         		
-		System.out.println(“Case 1: Nothing”);
-		runAuto = false;
-        	ourRobot.arcadeDrive(0,0);
-        	break;
+        		System.out.println("Case 1: Nothing");
+        		runAuto = false;
+        		ourRobot.arcadeDrive(0,0);
+        		break;
         		
         	case 2://Right Gear DR
         		
-        	System.out.println(“Case 2: Right DR“);
+        		System.out.println("Case 2: Right DR");
             	autoSetpoint = -56;//Degrees to turn (negative = left)
-		safeMode = false;
-		useCam = false;
-		runAuto = true;
+            	safeMode = false;
+            	useCam = false;
+            	runAuto = true;
         		break;
         		
         		
         	case 3://Left Gear DR
         		
-		System.out.println(“Case 3: Left DR”);
+        		System.out.println("Case 3: Left DR");
             	autoSetpoint = 56;
-		safeMode = false;
-		useCam = false;
-		runAuto = true;     		
-		break;
+            	safeMode = false;
+            	useCam = false;
+            	runAuto = true;     		
+            	break;
         		
         	case 4://Middle Gear
         		
-		System.out.println(“Case 4: Middle Gear”);
-		runAuto = false;
+        		System.out.println("Case 4: Middle Gear");
+        		runAuto = false;
             	if(autoCounter == 0){//Step 1 - Forward
             		if(leftSide.get() < 50){
             			ourRobot.arcadeDrive(-.6,.25*angleNow);
@@ -340,188 +340,189 @@ public class Robot extends IterativeRobot {
 
         	case 5://Right Gear Safe
         		
-        	System.out.println(“Case 5: Right Safe“);
+        		System.out.println("Case 5: Right Safe");
             	autoSetpoint = -56;//Degrees to turn (negative = left)
-		safeMode = true;
-		useCam = false;
-		runAuto = true;
-        	break;
+            	safeMode = true;
+            	useCam = false;
+            	runAuto = true;
+            	break;
         		
         	case 6://Left Gear Safe
 		
-        	System.out.println(“Case 6: Left Safe“);
+        		System.out.println("Case 6: Left Safe");
             	autoSetpoint = 56;//Degrees to turn (negative = left)
-        	safeMode = true;
-		useCam = false;
-		runAuto = true;
-        	break;
+            	safeMode = true;
+            	useCam = false;
+            	runAuto = true;
+            	break;
 
         	case 7://Right Gear Camera
 		
-        	System.out.println(“Case 7: Right Camera“);
+        		System.out.println("Case 7: Right Camera");
             	autoSetpoint = -56;//Degrees to turn (negative = left)
-        	safeMode = false;
-		useCam = true;
-		runAuto = true;
-        	break;
+            	safeMode = false;
+            	useCam = true;
+            	runAuto = true;
+            	break;
 
-        	case 7://Left Gear Camera
+        	case 8://Left Gear Camera
 		
-        	System.out.println(“Case 8: Left Camera“);
+        		System.out.println("Case 8: Left Camera");
             	autoSetpoint = 56;//Degrees to turn (negative = left)
-        	safeMode = false;
-		useCam = true;
-		runAuto = true;
-        	break;
+            	safeMode = false;
+            	useCam = true;
+            	runAuto = true;
+            	break;
+        }
 
 		if(autoCounter == 0 && runAuto){//Step 1 - Move Forward
-        			if(rightSide.get() < 1500){
-       				ourRobot.arcadeDrive(-.45,.25*angleNow);
-        			}
-        			else{
-        				ourRobot.arcadeDrive(0,0);//stop
-        				autoCounter = 1;//next step
-        			}
-        		}
-        		else if(autoCounter == 1){//Step 2 - Stop
+        	if(rightSide.get() < 1500){
+        		ourRobot.arcadeDrive(-.45,.25*angleNow);
+        	}
+        	else{
+        		ourRobot.arcadeDrive(0,0);//stop
+        		autoCounter = 1;//next step
+        	}
+        }
+        else if(autoCounter == 1){//Step 2 - Stop
+        	ourRobot.arcadeDrive(0,0);//stop
+      		if(leftSide.getRate() < 10){
+        			autoCounter = 2;//next step
+      		}
+        }
+        else if(autoCounter == 2){//Step 3 - Turn (Angle based using NavX)
+        	if(rotSpeed >= 0.8){//Limits steep to 80%
+        		ourRobot.arcadeDrive(0,.8);
+        	}
+        	else{
+        		ourRobot.arcadeDrive(0,rotSpeed);//turn at speed based on angle (See up above for how rotSpeed is calculated)
+        	}
+        	if(rotSpeed == 0 && Math.abs(rightSide.getRate()) < 50){//leftSide.getRate()) < 50){//If turning speed is supposed to be 0 and encoders say we are slow
+        		Timer.delay(0.1);//Wait to make sure we are actually stopped, not just passing our angle setpoint
+        		if(rotSpeed == 0 && Math.abs(rightSide.getRate()) < 50){//leftSide.getRate()) < 50){//Same check
         			ourRobot.arcadeDrive(0,0);//stop
-        			if(leftSide.getRate() < 10){
-        				autoCounter = 2;//next step
-			}
+        			Timer.delay(.15);
+        			leftSide.reset();//Reset encoders
+        			rightSide.reset();
+        			autoCounter = 3;//next step
         		}
-        		else if(autoCounter == 2){//Step 3 - Turn (Angle based using NavX)
-        			if(rotSpeed >= 0.8){//Limits steep to 80%
-        				ourRobot.arcadeDrive(0,.8);
-        			}
-        			else{
-        				ourRobot.arcadeDrive(0,rotSpeed);//turn at speed based on angle (See up above for how rotSpeed is calculated)
-        			}
-        			if(rotSpeed == 0 && Math.abs(rightSide.getRate()) < 50){//leftSide.getRate()) < 50){//If turning speed is supposed to be 0 and encoders say we are slow
-        				Timer.delay(0.1);//Wait to make sure we are actually stopped, not just passing our angle setpoint
-        				if(rotSpeed == 0 && Math.abs(rightSide.getRate()) < 50){//leftSide.getRate()) < 50){//Same check
-        					ourRobot.arcadeDrive(0,0);//stop
-        					Timer.delay(.15);
-        					leftSide.reset();//Reset encoders
-        					rightSide.reset();
-        					autoCounter = 3;//next step
-        				}
-        			} 			
-        		}
-        		else if(autoCounter == 3){//Step 4 - Forward (to get in vision range)
-        			if (rightSide.get() < 750){//leftSide.get()<750){
-        				ourRobot.arcadeDrive(-.5,0.25*(angleNow-autoSetpoint));//Move forward until encoders past setpoint
-        			}
-        			else{
-        				ourRobot.arcadeDrive(0,0);//stop
-				if(leftSide.getRate()<10){
+        	} 			
+        }
+        else if(autoCounter == 3){//Step 4 - Forward (to get in vision range)
+        	if (rightSide.get() < 750){//leftSide.get()<750){
+        		ourRobot.arcadeDrive(-.5,0.25*(angleNow-autoSetpoint));//Move forward until encoders past setpoint
+        	}
+        	else{
+        		ourRobot.arcadeDrive(0,0);//stop
+        		if(leftSide.getRate()<10){
 					if(useCam){
-        						autoCounter=4;//next step
+        				autoCounter=4;//next step
 					}
 					else{
 						autoCounter = 5;
 					}
 				}
-        			}
+        	}
+        }
+        else if(autoCounter == 4){//Step 5 - Vision
+        	if(centerX > 240 && centerX < 400){//If target is already centered
+        		leftSide.reset();//reset encoders
+        		rightSide.reset();
+        		autoCounter=5;//next step
+        	}
+        	else{
+        		if(targetRot > .25){//If center is on the left, turn based on distance from center
+           			if(targetRot < .345){
+           				ourRobot.arcadeDrive(0,.35);
+           			}
+           			else if(targetRot > .5){
+           				ourRobot.arcadeDrive(0,.48);
+           			}
+           			else{
+           				ourRobot.arcadeDrive(0,targetRot);
+           			}
+           		}
+           		else if(targetRot < -.25){//If center is on the right, turn based on distance from center
+           			if(targetRot > -.345){
+           				ourRobot.arcadeDrive(0,-.35);
+           			}
+           			else if(targetRot < -.475){
+           				ourRobot.arcadeDrive(0,-.48);
+           			}
+           			else{
+           				ourRobot.arcadeDrive(0,targetRot);//See up above for how targetRot is calculated
+           			}
+           		}
+           		else{//If target is now centered,
+           			Timer.delay(.25);//wait
+           			if(rightSide.getRate()<10){//leftSide.getRate()<10){//make sure bot is stopped
+           				ourRobot.arcadeDrive(0,0);//stop
+           				Timer.delay(.25);
+           				leftSide.reset();//reset encoders
+           				rightSide.reset();
+           				autoCounter = 5;//next step
+           			}
+           		}
+        	}
+        }
+        else if(autoCounter == 5){//Step 6 - Forward, Stop + Open Doors
+        	if(rightSide.get() < 700){
+        		ourRobot.arcadeDrive(-.475,0);//move until past encoders
         		}
-        		else if(autoCounter == 4){//Step 5 - Vision
-        			if(centerX > 240 && centerX < 400){//If target is already centered
-        				leftSide.reset();//reset encoders
-        				rightSide.reset();
-        				autoCounter=5;//next step
+        	else{
+        		ourRobot.arcadeDrive(0,0);//stop
+        		if(!safeMode){
+        			if(flagOne.getValue() > 3000 && leftSide.getRate() < 10){//if door closed
+            			gear.set(-.7);//open door
+            			Timer.delay(0.2);
+            			gear.set(-.3);
         			}
-        			else{
-        			if(targetRot > .25){//If center is on the left, turn based on distance from center
-            			if(targetRot < .345){
-            				ourRobot.arcadeDrive(0,.35);
-            			}
-            			else if(targetRot > .5){
-            				ourRobot.arcadeDrive(0,.48);
-            			}
-            			else{
-            				ourRobot.arcadeDrive(0,targetRot);
-            			}
-            		}
-            		else if(targetRot < -.25){//If center is on the right, turn based on distance from center
-            			if(targetRot > -.345){
-            				ourRobot.arcadeDrive(0,-.35);
-            			}
-            			else if(targetRot < -.475){
-            				ourRobot.arcadeDrive(0,-.48);
-            			}
-            			else{
-            				ourRobot.arcadeDrive(0,targetRot);//See up above for how targetRot is calculated
-            			}
-            		}
-            		else{//If target is now centered,
-            			Timer.delay(.25);//wait
-            			if(rightSide.getRate()<10){//leftSide.getRate()<10){//make sure bot is stopped
-            				ourRobot.arcadeDrive(0,0);//stop
-            				Timer.delay(.25);
-            				leftSide.reset();//reset encoders
-            				rightSide.reset();
-            				autoCounter = 5;//next step
-            			}
-            		}
-        			}
-        		}
-        		else if(autoCounter == 5){//Step 6 - Forward, Stop + Open Doors
-        			if(rightSide.get() < 700){
-        				ourRobot.arcadeDrive(-.475,0);//move until past encoders
-        			}
-        			else{
-        				ourRobot.arcadeDrive(0,0);//stop
-					if(!safeMode){
-        					if(flagOne.getValue() > 3000 && leftSide.getRate() < 10){//if door closed
-            						gear.set(-.7);//open door
-            						Timer.delay(0.2);
-            						gear.set(-.3);
-        						}
-						if(flagTwo.getValue() > 2500){
-							gear.set(0);
-							autoCounter = 6;
-						}	
-					}
-					else if(safeMode && leftSide.getRate() < 10){
-						autoCounter = 20;
+					if(flagTwo.getValue() > 2500){
+						gear.set(0);
+						autoCounter = 6;
 					}	
 				}
-        		}
-        		else if(autoCounter == 6){//Step 7 - Delay
-        			leftSide.reset();//reset encoders
-            			rightSide.reset();
-        			autoCounter = 7;//next step
-        		}
-        		else if(autoCounter == 7){//Step 8 - Start Reversing
-                			ourRobot.arcadeDrive(.5,0.25*(angleNow-autoSetpoint));
-                			autoCounter = 8;//next step
-        		}
-        		else if(autoCounter == 8){//Step 9 - Keep Reversing
-        			if(rightSide.get() > - 300){
-        				ourRobot.arcadeDrive(.5,0.25*(angleNow-autoSetpoint));
-        			}
-        			else{
-        				ourRobot.arcadeDrive(0,0);//stop
-        				autoCounter = 9;//next Step
-        			}
-        		}
-        		else if(autoCounter == 9){//Step 10 - Close Doors
-        			if(flagTwo.getValue() > 2500){//If doors open
-        				gear.set(.6);//close doors
-        			}
-			if(flagOne.getValue() > 3000){
+				else if(safeMode && leftSide.getRate() < 10){
+					autoCounter = 20;
+				}	
+			}
+        }
+        else if(autoCounter == 6){//Step 7 - Delay
+        	leftSide.reset();//reset encoders
+        	rightSide.reset();
+        	autoCounter = 7;//next step
+        }
+        else if(autoCounter == 7){//Step 8 - Start Reversing
+        	ourRobot.arcadeDrive(.5,0.25*(angleNow-autoSetpoint));
+        	autoCounter = 8;//next step
+       	}
+        else if(autoCounter == 8){//Step 9 - Keep Reversing
+        	if(rightSide.get() > - 300){
+        		ourRobot.arcadeDrive(.5,0.25*(angleNow-autoSetpoint));
+        	}
+        	else{
+        		ourRobot.arcadeDrive(0,0);//stop
+        		autoCounter = 9;//next Step
+        	}
+        }
+        else if(autoCounter == 9){//Step 10 - Close Doors
+        	if(flagTwo.getValue() > 2500){//If doors open
+        		gear.set(.6);//close doors
+        	}
+        	if(flagOne.getValue() > 3000){
 				gear.set(0);
 			}
-        		}
-        		else if(autoCounter == 20){
-        			ourRobot.arcadeDrive(0,0);
-        		}
+        }
+        else if(autoCounter == 20){
+        	ourRobot.arcadeDrive(0,0);
+        }
 
 
 
 
 
         		
-        }
+        
         
         
         
@@ -542,7 +543,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Speed", leftSide.getRate());
         
     }
-    	
+
     
     /**
      * This function is called once each time the robot enters teleoperated mode
@@ -556,7 +557,6 @@ public class Robot extends IterativeRobot {
     	closed = false;
     	open = false;
     	inTransition = true;
-    	farEnough = false;
     	visionThread.stop();
     }
 
@@ -669,7 +669,7 @@ public class Robot extends IterativeRobot {
 		}
 		else{//If more than 3 seconds have passed and the sensor has not been reached
 			gear.set(0);//Stop trying to close the doors
-			gearTime.stop()//Stop the timer
+			gearTime.stop();//Stop the timer
 		}
 	}
     	else{
