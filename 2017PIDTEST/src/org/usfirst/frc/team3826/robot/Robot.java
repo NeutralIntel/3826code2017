@@ -137,14 +137,15 @@ public class Robot extends IterativeRobot {
                 }
             }
         });
-        visionThread.start();
-        
     	ahrs = new AHRS(SPI.Port.kMXP);
     	
     	shooter.changeControlMode(TalonControlMode.Speed);
     	shooter.setFeedbackDevice(CANTalon.FeedbackDevice.QuadEncoder);
     	shooter.reverseOutput(true);
     	shooter.setPID(.85,0.000075,0);
+    	
+
+        visionThread.start();
     	
     	chooser = new SendableChooser();
     	chooser.addDefault("No Auto", 1);
@@ -167,6 +168,8 @@ public class Robot extends IterativeRobot {
     	rightSide.reset();
     	spike.set(Relay.Value.kForward);
     	mode = (int) chooser.getSelected();
+
+
     }
 
     /**
@@ -249,7 +252,7 @@ public class Robot extends IterativeRobot {
         		
             	if(autoCounter == 0){//Step 1 - Forward
         			if(rightSide.get() < 1500){//leftSide.get() < 1400){
-        				ourRobot.arcadeDrive(-.45,0);//Move forward until encoder value is passed
+        				ourRobot.arcadeDrive(-.45,.25*angleNow);//Move forward until encoder value is passed
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -409,7 +412,7 @@ public class Robot extends IterativeRobot {
             	autoSetpoint = 56;
             	if(autoCounter == 0){//Step 1 - Forward
         			if(rightSide.get() < 1500){//leftSide.get() < 1400){
-        				ourRobot.arcadeDrive(-.45,0);//Move forward until encoder value is passed
+        				ourRobot.arcadeDrive(-.45,.25*angleNow);//Move forward until encoder value is passed
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -562,6 +565,72 @@ public class Robot extends IterativeRobot {
         		
         	case 4://Middle Gear
         		
+
+            	if(autoCounter == 0){//Step 1 - Forward
+            		if(leftSide.get() < 50){
+            			ourRobot.arcadeDrive(-.6,.25*angleNow);
+            		}
+            		else if(leftSide.get() < 750 && leftSide.getRate() > 10){//leftSide.get() < 1400){
+        				ourRobot.arcadeDrive(-.6,.25*angleNow);//Move forward until encoder value is passed
+        			}
+            		else if(leftSide.getRate() < 10 && leftSide.get() > 50 && leftSide.get() < 750){
+        				ourRobot.arcadeDrive(-.7,.25*angleNow);
+        			}
+            		else if(leftSide.get() < 2100 && leftSide.getRate() > 50){
+        				ourRobot.arcadeDrive(-0.45,.25*angleNow);
+        			}
+        			else if(leftSide.getRate() < 50 && leftSide.get() < 1900 && leftSide.get() > 750){
+        				ourRobot.arcadeDrive(-0.675,.25*angleNow);
+        			}
+        			else if(leftSide.getRate() < 50 && leftSide.get() > 1900 && leftSide.get() < 2000){
+        				ourRobot.arcadeDrive(-.6,.65);
+        				Timer.delay(0.15);
+        				ourRobot.arcadeDrive(-.6,-.65);
+        				Timer.delay(0.15);
+        			}
+        			else{
+        				ourRobot.arcadeDrive(0,0);//stop
+        				autoCounter = 1;//next step
+        			}
+        		}
+        		else if(autoCounter == 1){//Step 2 - Stop
+        			ourRobot.arcadeDrive(0,0);
+        			if(leftSide.getRate() < 10){
+        				autoCounter = 2;//next step
+        			}
+        		}
+        		else if(autoCounter == 2){
+        			if(flagOne.getValue() > 3000){//if door closed
+        				gear.set(-1);//open door
+        				Timer.delay(0.175);
+        				gear.set(-.4);
+    				}
+        			else if(flagTwo.getValue() > 2500){
+        				gear.set(0);
+        				leftSide.reset();
+        				rightSide.reset();
+        				autoCounter = 3;//next step
+        			}
+        		}
+        		else if (autoCounter == 3){
+        			if(leftSide.get() > -350){
+        				ourRobot.arcadeDrive(.6,.25*angleNow);
+        			}
+        			else{
+        				autoCounter = 4;
+        			}
+        		}
+        		else if(autoCounter == 4){
+        			ourRobot.arcadeDrive(0,0);
+        			if(flagTwo.getValue() > 2500){
+        				gear.set(.5);
+        			}
+        			else if(flagOne.getValue() > 3000){
+        				gear.set(0);
+        				autoCounter = 5;
+        			}
+        		}
+            	
         		break;
         		
 
@@ -572,7 +641,7 @@ public class Robot extends IterativeRobot {
         		
             	if(autoCounter == 0){//Step 1 - Forward
         			if(rightSide.get() < 1500){//leftSide.get() < 1400){
-        				ourRobot.arcadeDrive(-.45,0);//Move forward until encoder value is passed
+        				ourRobot.arcadeDrive(-.45,.25*angleNow);//Move forward until encoder value is passed
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -605,7 +674,7 @@ public class Robot extends IterativeRobot {
         		//Right Gear
         		else if(autoCounter == 3){//Step 4 - Forward (to get in vision range)
         			if (rightSide.get() < 750){//leftSide.get()<750){
-        				ourRobot.arcadeDrive(-.5,0);//Move forward until encoders past setpoint
+        				ourRobot.arcadeDrive(-.5,0.05*(angleNow-autoSetpoint));//Move forward until encoders past setpoint
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -693,14 +762,14 @@ public class Robot extends IterativeRobot {
         		else if(autoCounter == 7){//Step 8 - Start Reversing, Stop Door
         			if(flagTwo.getValue() > 2500){//if doors open
                 		gear.set(0);//stop gear motor
-                		ourRobot.arcadeDrive(.5,0);//keep reversing
+                		ourRobot.arcadeDrive(.5,00);//keep reversing
                 		autoCounter = 8;//next step
                 	}
         		}
         		//Right Gear
         		else if(autoCounter == 8){//Step 9 - Keep Reversing
         			if(rightSide.get() > - 300){//leftSide.get() > - 300){//keep moving while encoders > -1000
-        				ourRobot.arcadeDrive(.5,0);
+        				ourRobot.arcadeDrive(.5,00);
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -733,7 +802,7 @@ public class Robot extends IterativeRobot {
         		
             	if(autoCounter == 0){//Step 1 - Forward
         			if(rightSide.get() < 1500){//leftSide.get() < 1400){
-        				ourRobot.arcadeDrive(-.45,0);//Move forward until encoder value is passed
+        				ourRobot.arcadeDrive(-.45,.25*angleNow);//Move forward until encoder value is passed
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -766,7 +835,7 @@ public class Robot extends IterativeRobot {
         		//Right Gear
         		else if(autoCounter == 3){//Step 4 - Forward (to get in vision range)
         			if (rightSide.get() < 750){//leftSide.get()<750){
-        				ourRobot.arcadeDrive(-.5,0);//Move forward until encoders past setpoint
+        				ourRobot.arcadeDrive(-.5,00);//Move forward until encoders past setpoint
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -818,7 +887,7 @@ public class Robot extends IterativeRobot {
         		//Right Gear
         		else if(autoCounter == 5){//Step 6 - Forward, Stop + Open Doors
         			if(rightSide.get() < 950){//leftSide.get() < 400){
-        				ourRobot.arcadeDrive(-.6,0);//move until past encoders
+        				ourRobot.arcadeDrive(-.6,00);//move until past encoders
         				if(rightSide.get() > 250 && rightSide.getRate() < 0){//If we are prematurely stopped (hitting the peg)
         					ourRobot.arcadeDrive(0,0);//stop
         					//if(flagOne.getValue() > 3000){//if door closed
@@ -913,7 +982,8 @@ public class Robot extends IterativeRobot {
     /**
      * This function is called once each time the robot enters teleoperated mode
      */
-    public void teleopInit(){
+    @SuppressWarnings("deprecation")
+	public void teleopInit(){
     	ahrs.reset();
     	leftSide.reset();
     	rightSide.reset();
@@ -922,6 +992,7 @@ public class Robot extends IterativeRobot {
     	open = false;
     	inTransition = true;
     	farEnough = false;
+    	visionThread.stop();
     }
 
     /**
@@ -934,82 +1005,7 @@ public class Robot extends IterativeRobot {
     	
     	spike.set(Relay.Value.kForward);
     	
-    	//ANGLE
-    	angleNow = ahrs.getAngle();
-        angleDisplace = Math.abs(angleNow - setPoint);
-        
-        //Makeshift PID Loop Stand-in
-        if(angleNow > setPoint && angleDisplace > 15){
-        	rotSpeed = 0.02 * (angleDisplace+5);
-        }
-        else if(angleNow > setPoint && angleDisplace > 1.25){
-        	rotSpeed = 0.4 + (angleDisplace/100);
-        }
-        else if(angleNow < setPoint && angleDisplace > 15){
-        	rotSpeed = -0.02 * (angleDisplace+5);
-        }
-        else if(angleNow < setPoint && angleDisplace > 1.25){
-        	rotSpeed = -0.4 - (angleDisplace/100);
-        }
-        else{
-        	rotSpeed = 0;
-        }
-
-        //VISION
-		if(Math.abs(centerRX - centerQX) > 50 || (centerRX == centerQX && (centerRX <= 50 || centerRX >= 590))){
-			if(centerRX > centerQX){
-				rCenter = centerRX;
-				qCenter = centerQX;
-			}
-			else{
-				rCenter = centerQX;
-				qCenter = centerRX;
-			}
-    	}
-		
-		centerX = (rCenter+qCenter)/2;
-		if (centerX <240){//From left border to Center-80 pixels
-			targetRot = .19 + 0.0015 * (320 - centerX);//Positive value for turning (turn right)
-		}
-		else if (centerX > 400){//From right border to Center+80 pixels
-			targetRot = -.19 + 0.0015 * (320 - centerX);//Negative value for turning (turn left)	
-		}
-		else{//If within 80 pixels tolerance
-			Timer.delay(0.15);//Wait to make sure we are stopped (to avoid false positives)
-			if(centerX > 240 && centerX < 400 && Math.abs(leftSide.getRate()) < 50){//And so that we are in step 5
-				targetRot = 0;
-			}
-			
-		}
-    	
-    	if(xBox.getRawButton(4)&&Math.abs(320-centerX)>25){//Turn to vision target
-    		if(targetRot > .125){
-    			if(targetRot < .425){
-    				ourRobot.arcadeDrive(0,.35);
-    			}
-    			else if(targetRot > .5){
-    				ourRobot.arcadeDrive(0,.5);
-    			}
-    			else{
-    				ourRobot.arcadeDrive(0,targetRot);
-    			}
-    		}
-    		else if(targetRot < -.125){
-    			if(targetRot > -.395){
-    				ourRobot.arcadeDrive(0,-.395);
-    			}
-    			else if(targetRot < -.5){
-    				ourRobot.arcadeDrive(0,-.5);
-    			}
-    			else{
-    				ourRobot.arcadeDrive(0,targetRot);//
-    			}
-    		}
-    		else{
-    			ourRobot.arcadeDrive(0,0);
-    		}
-    	}
-    	else if(xBox.getRawButton(5) && Math.abs(xBox.getRawAxis(0)) > .75){
+    	if(xBox.getRawButton(5) && Math.abs(xBox.getRawAxis(0)) > .75){
     		if(Math.abs(xBox.getRawAxis(1)) > .1){
     			ourRobot.arcadeDrive(.6*xBox.getRawAxis(1), -.6*xBox.getRawAxis(0));
     		}
