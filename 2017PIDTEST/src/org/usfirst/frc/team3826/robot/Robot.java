@@ -57,14 +57,13 @@ public class Robot extends IterativeRobot {
 	double targetRot;
 	
 	double setPoint;
-	double autoSetPoint;
 	double angleDisplace;
 	double rotSpeed;
 	double angleNow;
 	AHRS ahrs;
 	
 	int autoCounter;
-	int autoSetpoint;
+	double autoSetpoint;
 
 	AnalogInput flagOne;
 	AnalogInput flagTwo;
@@ -87,7 +86,10 @@ public class Robot extends IterativeRobot {
 	boolean safeMode;
 	boolean useCam;
 	boolean runAuto;
-	Timer gearTime;
+	boolean init;
+	int autoTime;
+	Timer autoTimer;
+	int autoInt;
 
     /**
      * This function is run when the robot is first started up and should be
@@ -111,6 +113,7 @@ public class Robot extends IterativeRobot {
     	leftSide.reset();
     	rightSide.setReverseDirection(false);
     	rightSide.reset();
+    	autoTimer = new Timer();
     	UsbCamera camera = CameraServer.getInstance().startAutomaticCapture();
         camera.setResolution(IMG_WIDTH, IMG_HEIGHT);
         camera.setExposureManual(45);
@@ -154,6 +157,8 @@ public class Robot extends IterativeRobot {
     	chooser.addObject("Left Gear Safe",6);
     	chooser.addObject("Right Gear Camera",7);
 		chooser.addObject("Left Gear Camera",8);
+		chooser.addObject("Right Shooting",9);
+		chooser.addObject("Left Shooting",10);
     	SmartDashboard.putData("Auto Modes", chooser);
     	
     }//
@@ -168,8 +173,10 @@ public class Robot extends IterativeRobot {
     	rightSide.reset();
     	spike.set(Relay.Value.kForward);
     	mode = (int) chooser.getSelected();
-
-
+    	autoTime = 0;
+    	autoTimer.reset();
+    	autoTimer.start();
+    	autoInt = 0;
     }
 
     /**
@@ -193,10 +200,10 @@ public class Robot extends IterativeRobot {
 		
 		centerX = (rCenter+qCenter)/2;//centerX is the avg. of the two
 		if (centerX <240){//From left border to Center-80 pixels
-			targetRot = .19 + 0.0015 * (320 - centerX);//Positive value for turning (turn right)
+			targetRot = .1925 + 0.0015 * (320 - centerX);//Positive value for turning (turn right)
 		}
 		else if (centerX > 400){//From right border to Center+80 pixels
-			targetRot = -.19 + 0.0015 * (320 - centerX);//Negative value for turning (turn left)	
+			targetRot = -.1925 + 0.0015 * (320 - centerX);//Negative value for turning (turn left)	
 		}
 		else{//If within 80 pixels tolerance
 			Timer.delay(0.15);//Wait to make sure we are stopped (to avoid false positives)
@@ -211,13 +218,13 @@ public class Robot extends IterativeRobot {
 	angleDisplace = Math.abs(angleNow - autoSetpoint);
         
         if(angleNow > autoSetpoint && angleDisplace > 15){//We are over 15 deg off (to the right)
-        	rotSpeed = 0.01885 * (angleDisplace+5);
+        	rotSpeed = 0.018925 * (angleDisplace+6);
         }
         else if(angleNow > autoSetpoint && angleDisplace > 5){//Under 15 deg off (to the right)
         	rotSpeed = 0.385 + (angleDisplace/75);
         }
         else if(angleNow < autoSetpoint && angleDisplace > 15){//Over 15 deg off (to the left)
-        	rotSpeed = -0.01885 * (angleDisplace+5);
+        	rotSpeed = -0.018925 * (angleDisplace+6);
         }
         else if(angleNow < autoSetpoint && angleDisplace > 5){//Under 15 deg off (to the left)
         	rotSpeed = -0.385 - (angleDisplace/75);
@@ -238,6 +245,7 @@ public class Robot extends IterativeRobot {
         		System.out.println("Default: Nothing");
         		runAuto = false;
         		ourRobot.arcadeDrive(0,0);
+        		mode = 1;
         		break;
         	
         	case 1://No moving
@@ -250,7 +258,7 @@ public class Robot extends IterativeRobot {
         	case 2://Right Gear DR
         		
         		System.out.println("Case 2: Right DR");
-            	autoSetpoint = -56;//Degrees to turn (negative = left)
+            	autoSetpoint = -56.25;//Degrees to turn (negative = left)
             	safeMode = false;
             	useCam = false;
             	runAuto = true;
@@ -280,13 +288,13 @@ public class Robot extends IterativeRobot {
             		else if(leftSide.getRate() < 10 && leftSide.get() > 50 && leftSide.get() < 750){
         				ourRobot.arcadeDrive(-.7,.25*angleNow);
         			}
-            		else if(leftSide.get() < 2100 && leftSide.getRate() > 50){
+            		else if(leftSide.get() < 2125 && leftSide.getRate() > 50){
         				ourRobot.arcadeDrive(-0.45,.25*angleNow);
         			}
-        			else if(leftSide.getRate() < 50 && leftSide.get() < 1900 && leftSide.get() > 750){
+        			else if(leftSide.getRate() < 50 && leftSide.get() < 1875 && leftSide.get() > 750){
         				ourRobot.arcadeDrive(-0.675,.25*angleNow);
         			}
-        			else if(leftSide.getRate() < 50 && leftSide.get() > 1900 && leftSide.get() < 2000){
+        			else if(leftSide.getRate() < 50 && leftSide.get() > 1875 && leftSide.get() < 2025){
         				ourRobot.arcadeDrive(-.6,.65);
         				Timer.delay(0.15);
         				ourRobot.arcadeDrive(-.6,-.65);
@@ -305,11 +313,9 @@ public class Robot extends IterativeRobot {
         		}
         		else if(autoCounter == 2){
         			if(flagOne.getValue() > 3000){//if door closed
-        				gear.set(-1);//open door
-        				Timer.delay(0.175);
-        				gear.set(-.4);
+        				gear.set(-.6);//open door
     				}
-        			else if(flagTwo.getValue() > 2500){//If door open
+        			if(flagTwo.getValue() > 2500){//If door open
         				gear.set(0);
         				leftSide.reset();
         				rightSide.reset();
@@ -318,7 +324,7 @@ public class Robot extends IterativeRobot {
         		}
         		else if (autoCounter == 3){
         			if(leftSide.get() > -350){
-        				ourRobot.arcadeDrive(.6,.25*angleNow);//Move backwards
+        				ourRobot.arcadeDrive(.6,0);//Move backwards
         			}
         			else{
         				autoCounter = 4;
@@ -341,7 +347,7 @@ public class Robot extends IterativeRobot {
         	case 5://Right Gear Safe
         		
         		System.out.println("Case 5: Right Safe");
-            	autoSetpoint = -56;//Degrees to turn (negative = left)
+            	autoSetpoint = -56.25;//Degrees to turn (negative = left)
             	safeMode = true;
             	useCam = false;
             	runAuto = true;
@@ -359,7 +365,7 @@ public class Robot extends IterativeRobot {
         	case 7://Right Gear Camera
 		
         		System.out.println("Case 7: Right Camera");
-            	autoSetpoint = -56;//Degrees to turn (negative = left)
+            	autoSetpoint = -56.25;//Degrees to turn (negative = left)
             	safeMode = false;
             	useCam = true;
             	runAuto = true;
@@ -373,10 +379,134 @@ public class Robot extends IterativeRobot {
             	useCam = true;
             	runAuto = true;
             	break;
+            	
+        	case 9://Right Shooting
+        		
+        		System.out.println("Case 9: Right Shooting");
+        		safeMode = false;
+        		useCam = false;
+        		runAuto = false;
+        		
+        		if(shooter.getSpeed() < -18200){
+	    			roller.set(-0.5);
+	    			sweeper.set(-1);
+	    			Timer.delay(.1);//How long roller spins
+	    			roller.set(0);
+	    			sweeper.set(0);
+	    			Timer.delay(.2);//Time between spins
+	    		}
+        		else{
+	    			roller.set(0);
+	    			sweeper.set(0);
+	    		}
+        		
+        		if(autoCounter == 0 && mode == 9){
+        			if(autoTimer.get() < 9.25){
+        	    		shooter.changeControlMode(TalonControlMode.Speed);
+        	    		shooter.set(-18275);//Setpoint for PID 18050
+        				}
+        	    	else{
+        	    		shooter.changeControlMode(TalonControlMode.Voltage);//Change mode to voltage in order to stop the shooter
+        	    		shooter.set(0);
+        	    		autoCounter = 16;
+        	    	}
+        		}
+        		else if(autoCounter == 16){
+        			if(angleNow < 57 && (autoInt==0 || autoInt ==1)){
+        				ourRobot.arcadeDrive(-.55,-.625);
+        				autoInt = 1;
+        			}
+        			else if(leftSide.get() < 2400 && (autoInt == 1 || autoInt == 2)){
+        				ourRobot.arcadeDrive(-.65,0);
+        				autoInt = 2;
+        			}
+        			else if(autoTime<15 && (autoInt == 2 || autoInt == 3)){
+        				ourRobot.arcadeDrive(0.4,0);
+        				autoTime++;
+        				autoInt = 3;
+        			}
+        			else if(angleNow > 20 && (autoInt == 3 || autoInt == 4)){
+        				ourRobot.arcadeDrive(0,.55);
+        				autoInt = 4;
+        			}
+        			else{
+        				autoCounter = 20;
+        			}
+        		}
+        		else if(autoCounter == 20){
+                	ourRobot.arcadeDrive(0,0);
+                }
+        	
+        	case 10://Left Shooting
+        		
+        		if(mode == 10){
+        			System.out.println("Case 10: Left Shooting");
+        		}
+        		safeMode = false;
+        		useCam = false;
+        		runAuto = false;
+        		
+        		if(shooter.getSpeed() < -18200){
+	    			roller.set(-0.5);
+	    			sweeper.set(-0.5);
+	    			Timer.delay(.1);//How long roller spins
+	    			roller.set(0);
+	    			sweeper.set(0);
+	    			Timer.delay(.2);//Time between spins
+	    		}
+        		else{
+	    			roller.set(0);
+	    			sweeper.set(0);
+	    		}
+        		
+        		if(autoCounter == 0 && mode == 10){
+        			if(autoTimer.get() < 9.25){
+        	    		shooter.changeControlMode(TalonControlMode.Speed);
+        	    		shooter.set(-18275);//Setpoint for PID 18050
+        				}
+        	    	else{
+        	    		shooter.changeControlMode(TalonControlMode.Voltage);//Change mode to voltage in order to stop the shooter
+        	    		shooter.set(0);
+        	    		autoCounter = 15;
+        	    	}
+        		}
+        		else if(autoCounter == 15){
+        			if(angleNow > -47.5 && (autoInt==0 || autoInt ==1)){
+        				ourRobot.arcadeDrive(-.55,.625);
+        				autoInt = 1;
+        			}
+        			else if(leftSide.get() < 1600 && (autoInt == 1 || autoInt == 2)){
+        				ourRobot.arcadeDrive(-.65,0);
+        				autoInt = 2;
+        			}
+        			else if(autoTime<7.5 && (autoInt == 2 || autoInt == 3)){
+        				ourRobot.arcadeDrive(0.4,0);
+        				autoTime++;
+        				autoInt = 3;
+        			}
+        			else if(angleNow < -35 && (autoInt == 3 || autoInt == 4)){
+        				ourRobot.arcadeDrive(0,-.5);
+        				autoInt = 4;
+        			}
+        			else{
+        				autoCounter = 20;
+        			}
+        		}
+        		else if(autoCounter == 20){
+                	ourRobot.arcadeDrive(0,0);
+                }
+        }//End of Case Switch
+        
+        if(mode != 9 && mode != 10){
+        	shooter.changeControlMode(TalonControlMode.Voltage);//Change mode to voltage in order to stop the shooter
+    		shooter.set(0);
+    		roller.set(0);
+    		sweeper.set(0);
         }
-
+        
+        if(mode != 1 && mode != 4 && mode != 9 && mode != 10){
 		if(autoCounter == 0 && runAuto){//Step 1 - Move Forward
-        	if(rightSide.get() < 1500){
+        	if(rightSide.get() < 1225){
         		ourRobot.arcadeDrive(-.45,.25*angleNow);
         	}
         	else{
@@ -516,7 +646,7 @@ public class Robot extends IterativeRobot {
         else if(autoCounter == 20){
         	ourRobot.arcadeDrive(0,0);
         }
-
+        }
 
 
 
@@ -541,6 +671,7 @@ public class Robot extends IterativeRobot {
     	SmartDashboard.putNumber("Left Side", leftSide.get());
     	SmartDashboard.putNumber("Right Side", rightSide.get());
     	SmartDashboard.putNumber("Left Speed", leftSide.getRate());
+    	SmartDashboard.putNumber("Mode",mode);
         
     }
 
@@ -557,6 +688,7 @@ public class Robot extends IterativeRobot {
     	closed = false;
     	open = false;
     	inTransition = true;
+    	init = true;
     	visionThread.stop();
     }
 
@@ -596,7 +728,7 @@ public class Robot extends IterativeRobot {
     		}
     	}
     	else if(!xBox.getRawButton(5) && Math.abs(xBox.getRawAxis(1)) > .1 || Math.abs(xBox.getRawAxis(0)) > 0.15){//If left stick outside deadzone
-    		ourRobot.arcadeDrive(xBox.getRawAxis(1), -.85*xBox.getRawAxis(0));//Control the bot with the left stick
+    		ourRobot.arcadeDrive(xBox.getRawAxis(1), -.9*xBox.getRawAxis(0));//Control the bot with the left stick
     	}
     	else if(!xBox.getRawButton(5) && Math.abs(xBox.getRawAxis(5)) > .1 || Math.abs(xBox.getRawAxis(4)) > 0.15){//If right stick outside deadzone
     		ourRobot.arcadeDrive(-xBox.getRawAxis(5), -.85*xBox.getRawAxis(4));//Control the bot with the right stick
@@ -607,8 +739,12 @@ public class Robot extends IterativeRobot {
     	}
     	
     	
-    	if(xBox.getRawButton(6)){//RB activates sweeper
+    	if(xBox.getRawButton(6) && !xBox.getRawButton(7)){//RB activates sweeper
     		sweeper.set(-.75);
+    	}
+    	else if(xBox.getRawButton(6) && xBox.getRawButton(7)){
+    		sweeper.set(1);
+    		roller.set(1);
     	}
     	else if(shooter.getEncVelocity() > -10000){
     		sweeper.set(0);
@@ -632,18 +768,20 @@ public class Robot extends IterativeRobot {
     	if(inTransition && flagOne.getValue() > 3000 && !open){//CLOSED
     		fOne = 1;
     		fTwo = 0;
-		gear.set(0);
-		closed = true;
-		open = false;
-		inTransition = false;
+    		init = false;
+    		gear.set(0);
+			closed = true;
+			open = false;
+			inTransition = false;
     	}
     	else if(inTransition && flagTwo.getValue() > 2500 && !closed){//OPEN
     		fOne = 0;
     		fTwo = 1;
-		gear.set(0);
-		open = true;
-		closed = false;
-		inTransition = false;
+    		init = false;
+    		gear.set(0);
+    		open = true;
+    		closed = false;
+    		inTransition = false;
     	}
     	else if(!inTransition){//MOVING
     		if(xBox.getRawButton(2) && closed){
@@ -662,25 +800,22 @@ public class Robot extends IterativeRobot {
     		}
     		
     	}
-	else if(inTransition && !closed && !open){//Failsafe - if neither sensors are triggered at the start of Teleop
-		gearTime.start();//Start a timer
-		if(gearTime.get() < 3){//If less than 3 seconds have passed
-			gear.set(0.5);//Try to close the doors
-		}
-		else{//If more than 3 seconds have passed and the sensor has not been reached
-			gear.set(0);//Stop trying to close the doors
-			gearTime.stop();//Stop the timer
-		}
-	}
+    	else if(inTransition && !closed && !open && init){//Failsafe - if neither sensors are triggered at the start of Teleop
+    	
+    			gear.set(0.5);//Try to close the doors
+    		
+    	}
     	else{
     		fOne = 0;
     		fTwo = 0;
     	}
+    	//If feeder station is < 24" off ground, cut ears
+    	//If > 26", back up
     	
     	
     	if(xBox.getRawAxis(2)>.1){//Left Trigger
     		shooter.changeControlMode(TalonControlMode.Speed);
-    		shooter.set(-18850);//Setpoint for PID
+    		shooter.set(-18250);//Setpoint for PID 18050
     	}
     	else{
     		shooter.changeControlMode(TalonControlMode.Voltage);//Change mode to voltage in order to stop the shooter
@@ -688,7 +823,7 @@ public class Robot extends IterativeRobot {
     	}
     	
     	
-    		if(shooter.getEncVelocity() < -18500){//Speed we shoot at
+    		if(shooter.getEncVelocity() < -18175){//Speed we shoot at 17975
     			atSpeed = true;
     		}
     		else{
@@ -699,14 +834,17 @@ public class Robot extends IterativeRobot {
     	if(atSpeed){
 			roller.set(-0.5);
 			sweeper.set(-0.5);
-			Timer.delay(.15);//How long roller spins
+			Timer.delay(.1);//How long roller spins
 			roller.set(0);
 			sweeper.set(0);
-			Timer.delay(.15);//Time between spins
+			Timer.delay(.2);//Time between spins
 			}
-    	else{
+    	else if(!xBox.getRawButton(7)){
     		roller.set(0);
     	}
+    }
+    else if(!xBox.getRawButton(7) || !xBox.getRawButton(6)){
+    	roller.set(0);
     }
     
     	    	
