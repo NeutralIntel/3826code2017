@@ -290,15 +290,21 @@ public class Robot extends IterativeRobot {
         			}
             		else if(leftSide.get() < 2125 && leftSide.getRate() > 50){
         				ourRobot.arcadeDrive(-0.45,.25*angleNow);
+        				autoTime = 0;
         			}
-        			else if(leftSide.getRate() < 50 && leftSide.get() < 1875 && leftSide.get() > 750){
+        			else if(leftSide.getRate() < 50 && leftSide.get() < 1825 && leftSide.get() > 750){
         				ourRobot.arcadeDrive(-0.675,.25*angleNow);
         			}
-        			else if(leftSide.getRate() < 50 && leftSide.get() > 1875 && leftSide.get() < 2025){
-        				ourRobot.arcadeDrive(-.6,.65);
-        				Timer.delay(0.15);
-        				ourRobot.arcadeDrive(-.6,-.65);
-        				Timer.delay(0.15);
+        			else if(leftSide.getRate() < 50 && leftSide.get() > 1825 && leftSide.get() < 2075){
+        				/*ourRobot.arcadeDrive(-.6,1);//Turning to unstick the peg
+        				Timer.delay(0.25);
+        				ourRobot.arcadeDrive(-.7,0);
+        				Timer.delay(.25);
+        				ourRobot.arcadeDrive(-.6,-1);
+        				Timer.delay(0.25);
+        				ourRobot.arcadeDrive(-.7,0);
+        				Timer.delay(.25);*/
+        				autoCounter = 17;
         			}
         			else{
         				ourRobot.arcadeDrive(0,0);//stop
@@ -340,6 +346,24 @@ public class Robot extends IterativeRobot {
         				autoCounter = 5;
         			}
         		}
+            	if(autoCounter == 17){
+					if(autoTime < 15){
+						ourRobot.arcadeDrive(.475,0);
+						autoTime++;
+					}
+					else if(autoTime < 35){
+						autoTime++;
+						ourRobot.arcadeDrive(0,.5);
+					}
+					else if(autoTime < 85){
+						ourRobot.arcadeDrive(-.65,0);
+						autoTime++;
+					}
+					else{
+						ourRobot.arcadeDrive(0,0);
+						autoCounter = 1;
+					}
+				}
             	
         		break;
         		
@@ -387,7 +411,7 @@ public class Robot extends IterativeRobot {
         		useCam = false;
         		runAuto = false;
         		
-        		if(shooter.getSpeed() < -18200){
+        		if(shooter.getSpeed() < -18250){
 	    			roller.set(-0.5);
 	    			sweeper.set(-1);
 	    			Timer.delay(.1);//How long roller spins
@@ -403,7 +427,7 @@ public class Robot extends IterativeRobot {
         		if(autoCounter == 0 && mode == 9){
         			if(autoTimer.get() < 9.25){
         	    		shooter.changeControlMode(TalonControlMode.Speed);
-        	    		shooter.set(-18275);//Setpoint for PID 18050
+        	    		shooter.set(-18325);//Setpoint for PID 18050
         				}
         	    	else{
         	    		shooter.changeControlMode(TalonControlMode.Voltage);//Change mode to voltage in order to stop the shooter
@@ -412,7 +436,7 @@ public class Robot extends IterativeRobot {
         	    	}
         		}
         		else if(autoCounter == 16){
-        			if(angleNow < 57 && (autoInt==0 || autoInt ==1)){
+        			if(angleNow < 65 && (autoInt==0 || autoInt ==1)){
         				ourRobot.arcadeDrive(-.55,-.625);
         				autoInt = 1;
         			}
@@ -425,7 +449,7 @@ public class Robot extends IterativeRobot {
         				autoTime++;
         				autoInt = 3;
         			}
-        			else if(angleNow > 20 && (autoInt == 3 || autoInt == 4)){
+        			else if(angleNow > 15 && (autoInt == 3 || autoInt == 4)){
         				ourRobot.arcadeDrive(0,.55);
         				autoInt = 4;
         			}
@@ -471,7 +495,7 @@ public class Robot extends IterativeRobot {
         	    	}
         		}
         		else if(autoCounter == 15){
-        			if(angleNow > -47.5 && (autoInt==0 || autoInt ==1)){
+        			if(angleNow > -52.5 && (autoInt==0 || autoInt ==1)){
         				ourRobot.arcadeDrive(-.55,.625);
         				autoInt = 1;
         			}
